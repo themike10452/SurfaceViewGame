@@ -1,0 +1,12 @@
+*.iml
+*.jks
+*.apk
+.gradle
+/.idea
+/local.properties
+/signing.properties
+/.idea/workspace.xml
+/.idea/libraries
+/build
+/captures
+/gradle
