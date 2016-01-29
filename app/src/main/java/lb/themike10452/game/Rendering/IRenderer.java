@@ -8,4 +8,5 @@ import android.view.SurfaceHolder;
  */
 public interface IRenderer extends SurfaceHolder.Callback {
     void onDraw(Canvas canvas);
+    void onUpdate();
 }

@@ -16,8 +16,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SurfaceView surfaceView = new SurfaceView(this);
-        SurfaceRenderer.adopt(surfaceView);
         setContentView(surfaceView);
+        new SurfaceRenderer(surfaceView);
     }
 
     @Override
