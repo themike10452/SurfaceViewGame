@@ -12,12 +12,14 @@ import lb.themike10452.game.Rendering.SurfaceRenderer;
  */
 public class MainActivity extends Activity {
 
+    SurfaceRenderer mRenderer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SurfaceView surfaceView = new SurfaceView(this);
         setContentView(surfaceView);
-        new SurfaceRenderer(surfaceView);
+        mRenderer = new SurfaceRenderer(surfaceView);
     }
 
     @Override
@@ -26,6 +28,13 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.KEEP_SCREEN_ON);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mRenderer.release();
     }
 }

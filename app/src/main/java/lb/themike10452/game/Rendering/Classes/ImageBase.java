@@ -55,7 +55,6 @@ public class ImageBase {
     }
 
     public void dispose() {
-        if (mBitmap.isRecycled()) return;
-        mBitmap.recycle();
+        if (!mBitmap.isRecycled()) mBitmap.recycle();
     }
 }

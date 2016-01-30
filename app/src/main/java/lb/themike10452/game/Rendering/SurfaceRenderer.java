@@ -1,17 +1,12 @@
 package lb.themike10452.game.Rendering;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
-import android.media.AudioAttributes;
-import android.media.AudioManager;
-import android.media.SoundPool;
-import android.os.Build;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -19,26 +14,30 @@ import android.view.SurfaceView;
 import android.view.View;
 
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
 
 import lb.themike10452.game.R;
-import lb.themike10452.game.Rendering.Classes.Bird;
+import lb.themike10452.game.Rendering.Classes.GunSight;
+import lb.themike10452.game.Rendering.Classes.Duck;
+import lb.themike10452.game.Rendering.Classes.Grass;
+import lb.themike10452.game.Rendering.Classes.Stone;
+import lb.themike10452.game.Rendering.Classes.Tree;
 
 /**
  * Created by DELL on 1/27/2016.
  */
 public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
-
     private static final boolean DEBUG = true;
     private static final String TAG = "DEBUG";
+    private static final String BG_COLOR = "#87ceeb";
 
-    private ContinuousRenderingThread mRenderingThread;
-    private Bitmap mCrossHair;
-    private Bitmap mGrass;
-    private Bird mBird1;
-    private GameClock mGameClock;
-    private HashMap<Integer, Integer> mSoundMap;
-    private SoundPool mSoundPool;
+    private RenderingThread mRenderingThread;
+    private GunSight mCrossHair;
+    private Duck mDuck1;
+    private Duck mDuck2;
+    private Grass mGrass;
+    private Stone mStone;
+    private Tree mTree;
+    private GameResources mGameRes;
     private SurfaceView mSurfaceView;
 
     private Paint mPaint1;
@@ -50,7 +49,7 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
 
     public SurfaceRenderer(SurfaceView surfaceView) {
         mSurfaceView = surfaceView;
-        mGameClock = new GameClock();
+        mGameRes = new GameResources(surfaceView.getContext());
 
         mPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint1.setColor(Color.WHITE);
@@ -59,9 +58,7 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         mPaint2 = new Paint();
         mPaint2.setColor(Color.BLUE);
 
-        Context context = surfaceView.getContext();
-        loadResources(context);
-        loadSounds(context);
+        intiSceneElements(surfaceView.getContext());
 
         mSurfaceView.getHolder().setFormat(PixelFormat.TRANSPARENT);
         mSurfaceView.getHolder().addCallback(this);
@@ -72,56 +69,62 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         }
     }
 
-    private void loadResources(Context context) {
-        Bitmap originalCrossHair = BitmapFactory.decodeResource(context.getResources(), R.drawable.crosshair);
-        mCrossHair = Bitmap.createScaledBitmap(originalCrossHair, 150, 150, false);
-        originalCrossHair.recycle();
+    private void intiSceneElements(Context context) {
+        WeakReference<Context> ctr = new WeakReference<>(context);
+        mCrossHair = new GunSight(ctr);
+        mGrass = new Grass(ctr);
+        mStone = new Stone(ctr);
+        mTree = new Tree(ctr);
 
-        Bitmap originalGrass = BitmapFactory.decodeResource(context.getResources(), R.drawable.grass);
-        int height = context.getResources().getDisplayMetrics().heightPixels / 4;
-        float ratio = (float) height / originalGrass.getHeight();
-        mGrass = Bitmap.createScaledBitmap(originalGrass, (int) (originalGrass.getWidth() * ratio), height, false);
-        originalGrass.recycle();
+        DisplayMetrics dm = context.getResources().getDisplayMetrics();
+        int hpadding = dm.widthPixels / 15;
 
-        mBird1 = new Bird(new WeakReference<>(context.getApplicationContext()), mGameClock);
+        mGrass.update(0, dm.heightPixels - mGrass.getBitmap().getHeight());
+        mStone.update(dm.widthPixels - mStone.getBitmap().getWidth() - hpadding, dm.heightPixels - mStone.getBitmap().getHeight());
+        mTree.update(hpadding, dm.heightPixels - mTree.getBitmap().getHeight());
+
+        mDuck1 = new Duck(ctr, mGameRes);
+        mDuck2 = new Duck(ctr, mGameRes);
     }
 
-    private void loadSounds(Context context) {
-        mSoundMap = new HashMap<>(1);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mSoundPool = new SoundPool.Builder()
-                    .setAudioAttributes(new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_GAME)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build())
-                    .build();
-        } else {
-            mSoundPool = new SoundPool(4, AudioManager.STREAM_MUSIC, 0);
-        }
-
-        mSoundMap.put(R.raw.shoot, mSoundPool.load(context, R.raw.shoot, 0));
+    public void release() {
+        mCrossHair.dispose();
+        mDuck1.dispose();
+        mDuck2.dispose();
+        mGameRes.dispose();
+        mGrass.dispose();
+        mStone.dispose();
+        mTree.dispose();
     }
 
     @Override
     public void onUpdate() {
-        mGameClock.update();
-        mBird1.update();
+        mGameRes.getGameClock().update();
+        mDuck1.update();
+        mDuck2.update();
     }
 
     @Override
     public void onDraw(Canvas canvas) {
-        mBird1.draw(canvas);
-        //canvas.drawBitmap(mBackground, 0, 0, null);
-        canvas.drawBitmap(mGrass, 0, canvas.getHeight() - mGrass.getHeight(), null);
+        //draw background elements
+        mTree.draw(canvas);
+        mStone.draw(canvas);
+
+        //draw ducks
+        mDuck1.draw(canvas);
+        mDuck2.draw(canvas);
+
+        //draw foreground elements
+        mGrass.draw(canvas);
 
         if (mTouchActive) {
-            canvas.drawBitmap(mCrossHair, mTouchX - mCrossHair.getWidth() / 2, mTouchY - mCrossHair.getHeight() / 2, null);
+            mCrossHair.update(mTouchX, mTouchY);
+            mCrossHair.draw(canvas);
         }
 
         if (DEBUG) {
             canvas.drawRect(50f, 30f, 200f, 30f + 25f, mPaint2);
-            String debugText = mGameClock.getFrameTime() + " ms";
+            String debugText = mGameRes.getGameClock().getFrameTime() + " ms";
             canvas.drawText(debugText, 50, 50, mPaint1);
         }
     }
@@ -131,15 +134,22 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
             return;
         }
 
-        mRenderingThread = new ContinuousRenderingThread(mSurfaceView.getHolder());
+        mRenderingThread = new RenderingThread(mSurfaceView.getHolder());
         mRenderingThread.startThread();
     }
 
     private void onShoot(int x, int y) {
-        if (mBird1.hit(x, y)) {
-            mBird1.shoot();
+        if (mDuck1.hit(x, y)) {
+            mDuck1.shoot();
             if (DEBUG) {
-                Log.d(TAG, String.format("Bird1 shot %d %d", x, y));
+                Log.d(TAG, String.format("Duck1 shot %d %d", x, y));
+            }
+        }
+
+        if (mDuck2.hit(x, y)) {
+            mDuck2.shoot();
+            if (DEBUG) {
+                Log.d(TAG, String.format("Duck2 shot %d %d", x, y));
             }
         }
     }
@@ -201,7 +211,7 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
             case MotionEvent.ACTION_POINTER_DOWN:
                 int pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
                 if (pointerIndex == 1) {
-                    mSoundPool.play(mSoundMap.get(R.raw.shoot), 0.99f, 0.99f, 0, 0, 1);
+                    mGameRes.playSound(R.raw.shoot);
                     onShoot((int) event.getRawX(), (int) event.getRawY());
                 }
 
@@ -214,18 +224,18 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         }
     }
 
-    private class ContinuousRenderingThread extends Thread {
+    private class RenderingThread extends Thread {
         private final SurfaceHolder mSurfaceHolder;
         private boolean mRunning;
         private boolean mStopping;
 
-        public ContinuousRenderingThread(SurfaceHolder surfaceHolder) {
+        public RenderingThread(SurfaceHolder surfaceHolder) {
             mSurfaceHolder = surfaceHolder;
         }
 
         public void startThread() {
             mRunning = true;
-            mGameClock.start();
+            mGameRes.getGameClock().start();
             super.start();
         }
 
@@ -253,11 +263,14 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
                     canvas = mSurfaceHolder.lockCanvas();
                     if (canvas != null && mSurfaceReady) {
                         synchronized (mSurfaceHolder) {
-                            canvas.drawColor(Color.parseColor("#87ceeb"));
-                            //canvas.drawColor(0, PorterDuff.Mode.CLEAR);
+                            canvas.drawColor(Color.parseColor(BG_COLOR));
                             onUpdate();
                             onDraw(canvas);
                         }
+                    }
+                } catch (IllegalStateException e) {
+                    if (DEBUG) {
+                        e.printStackTrace();
                     }
                 } finally {
                     if (canvas != null) {
