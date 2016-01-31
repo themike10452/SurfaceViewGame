@@ -6,7 +6,7 @@ import android.graphics.Rect;
 /**
  * Created by DELL on 1/28/2016.
  */
-public class InteractiveBase extends ImageBase {
+public class InteractiveBase extends StaticImageBase {
 
     protected Rect mRect;
 
@@ -19,10 +19,6 @@ public class InteractiveBase extends ImageBase {
     public void update(int left, int top) {
         super.update(left, top);
         mRect.set(mLeft, top, mRight, mBottom);
-    }
-
-    public void move(int dx, int dy) {
-        update(mLeft + dx, mTop + dy);
     }
 
     public boolean hit(int x, int y) {

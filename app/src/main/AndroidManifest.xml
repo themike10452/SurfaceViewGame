@@ -1,6 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="lb.themike10452.game">
 
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.touchscreen.multitouch"
+        android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.screen.landscape"
+        android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.audio.low_latency"
+        android:required="false" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

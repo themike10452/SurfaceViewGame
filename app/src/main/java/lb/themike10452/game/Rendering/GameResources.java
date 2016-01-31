@@ -2,6 +2,7 @@ package lb.themike10452.game.Rendering;
 
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.util.DisplayMetrics;
 
 import java.util.HashMap;
 
@@ -11,11 +12,16 @@ import lb.themike10452.game.R;
  * Created by DELL on 1/30/2016.
  */
 public class GameResources {
+    private DisplayMetrics mDisplayMetrics;
     private GameClock mGameClock;
     private HashMap<Integer, MediaPlayer> mSoundMap;
 
     public GameClock getGameClock() {
         return mGameClock;
+    }
+    
+    public DisplayMetrics getDisplayMetrics() {
+        return mDisplayMetrics;
     }
 
     public void playSound(int id) {
@@ -28,6 +34,7 @@ public class GameResources {
     }
 
     public GameResources(Context context) {
+        mDisplayMetrics = context.getResources().getDisplayMetrics();
         mGameClock = new GameClock();
         loadSounds(context);
     }

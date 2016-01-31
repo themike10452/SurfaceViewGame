@@ -16,8 +16,10 @@ import android.view.View;
 import java.lang.ref.WeakReference;
 
 import lb.themike10452.game.R;
-import lb.themike10452.game.Rendering.Classes.GunSight;
+import lb.themike10452.game.Rendering.Animation.SpriteBatch;
+import lb.themike10452.game.Rendering.Animation.SpriteSheet;
 import lb.themike10452.game.Rendering.Classes.Duck;
+import lb.themike10452.game.Rendering.Classes.GunSight;
 import lb.themike10452.game.Rendering.Classes.Grass;
 import lb.themike10452.game.Rendering.Classes.Stone;
 import lb.themike10452.game.Rendering.Classes.Tree;
@@ -39,6 +41,8 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
     private Tree mTree;
     private GameResources mGameRes;
     private SurfaceView mSurfaceView;
+    private SpriteSheet mSpriteSheet;
+    private SpriteBatch mSpriteBatch;
 
     private Paint mPaint1;
     private Paint mPaint2;
@@ -48,8 +52,11 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
     private boolean mSurfaceReady;
 
     public SurfaceRenderer(SurfaceView surfaceView) {
+        Context context = surfaceView.getContext();
         mSurfaceView = surfaceView;
-        mGameRes = new GameResources(surfaceView.getContext());
+        mGameRes = new GameResources(context);
+        mSpriteSheet = new SpriteSheet(context.getResources(), R.drawable.spritesheet, context.getAssets(), "spritesheet.json");
+        mSpriteBatch = new SpriteBatch(mSpriteSheet);
 
         mPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint1.setColor(Color.WHITE);
@@ -83,14 +90,12 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         mStone.update(dm.widthPixels - mStone.getBitmap().getWidth() - hpadding, dm.heightPixels - mStone.getBitmap().getHeight());
         mTree.update(hpadding, dm.heightPixels - mTree.getBitmap().getHeight());
 
-        mDuck1 = new Duck(ctr, mGameRes);
-        mDuck2 = new Duck(ctr, mGameRes);
+        mDuck1 = new Duck(mGameRes, mSpriteSheet);
+        mDuck2 = new Duck(mGameRes, mSpriteSheet);
     }
 
     public void release() {
         mCrossHair.dispose();
-        mDuck1.dispose();
-        mDuck2.dispose();
         mGameRes.dispose();
         mGrass.dispose();
         mStone.dispose();
@@ -110,9 +115,11 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         mTree.draw(canvas);
         mStone.draw(canvas);
 
-        //draw ducks
-        mDuck1.draw(canvas);
-        mDuck2.draw(canvas);
+        //Draw moving elements
+        mSpriteBatch.begin();
+        mSpriteBatch.add(mDuck1);
+        mSpriteBatch.add(mDuck2);
+        mSpriteBatch.draw(canvas);
 
         //draw foreground elements
         mGrass.draw(canvas);
@@ -126,6 +133,8 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
             canvas.drawRect(50f, 30f, 200f, 30f + 25f, mPaint2);
             String debugText = mGameRes.getGameClock().getFrameTime() + " ms";
             canvas.drawText(debugText, 50, 50, mPaint1);
+            canvas.drawLines(new float[]{mTouchX, 0, mTouchX, 1080}, mPaint1);
+            canvas.drawLines(new float[]{0, mTouchY, 1920, mTouchY}, mPaint1);
         }
     }
 
@@ -164,6 +173,7 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+                System.gc();
                 start();
             }
         }, 1000);
@@ -194,9 +204,6 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
                 mTouchX = (int) event.getRawX();
                 mTouchY = (int) event.getRawY();
                 mTouchActive = true;
-                if (DEBUG) {
-                    Log.d(TAG, "ACTION_DOWN");
-                }
                 return true;
             case MotionEvent.ACTION_MOVE:
                 mTouchX = (int) event.getRawX();
@@ -204,19 +211,12 @@ public class SurfaceRenderer implements IRenderer, View.OnTouchListener {
                 return true;
             case MotionEvent.ACTION_UP:
                 mTouchActive = false;
-                if (DEBUG) {
-                    Log.d(TAG, "ACTION_UP");
-                }
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
                 int pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
                 if (pointerIndex == 1) {
                     mGameRes.playSound(R.raw.shoot);
                     onShoot((int) event.getRawX(), (int) event.getRawY());
-                }
-
-                if (DEBUG) {
-                    Log.d(TAG, "ACTION_POINTER_DOWN " + pointerIndex);
                 }
                 return false;
             default:

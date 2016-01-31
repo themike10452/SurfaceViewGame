@@ -6,7 +6,7 @@ import android.graphics.Canvas;
 /**
  * Created by DELL on 1/28/2016.
  */
-public class ImageBase {
+public class StaticImageBase {
 
     protected Bitmap mBitmap;
 
@@ -35,7 +35,7 @@ public class ImageBase {
         return mBottom;
     }
 
-    public ImageBase(Bitmap bitmap) {
+    public StaticImageBase(Bitmap bitmap) {
         mBitmap = bitmap;
         mLeft = 0;
         mTop = 0;
@@ -48,6 +48,10 @@ public class ImageBase {
         mTop = top;
         mRight = mLeft + mBitmap.getWidth();
         mBottom = mTop + mBitmap.getHeight();
+    }
+
+    public void move(int dx, int dy) {
+        update(mLeft + dx, mTop + dy);
     }
 
     public void draw(Canvas canvas) {

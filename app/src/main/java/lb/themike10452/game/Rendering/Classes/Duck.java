@@ -1,214 +1,143 @@
 package lb.themike10452.game.Rendering.Classes;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.util.DisplayMetrics;
+import android.util.Log;
 
-import java.lang.ref.WeakReference;
 import java.util.Random;
 
 import lb.themike10452.game.R;
+import lb.themike10452.game.Rendering.Animation.Animation;
+import lb.themike10452.game.Rendering.Animation.IDrawable;
+import lb.themike10452.game.Rendering.Animation.SpriteBatch;
+import lb.themike10452.game.Rendering.Animation.SpriteSheet;
 import lb.themike10452.game.Rendering.Constants;
 import lb.themike10452.game.Rendering.GameResources;
 
 /**
- * Created by DELL on 1/28/2016.
+ * Created by DELL on 1/31/2016.
  */
-public class Duck extends InteractiveBase {
+public class Duck extends AnimatedImageBase implements IDrawable {
     private static final int ANIMATION_RATE = 16;
     private static final int QUACK_RATE = 1;
     private static final int DELAY_BEFORE_FALL = 500;
     private static final int RESET_TIME = 3000;
-    private static final int DEFAULT_MOVEMENT_RATE = 700;
+    private static final int DEFAULT_MOVEMENT_RATE = 200;
+    private static final int FALL_RATE = 700;
 
-    private static int MovementRate;
+    protected Random mRandom;
 
-    private Bitmap mBitmapFlyAnim1;
-    private Bitmap mBitmapFlyAnim2;
-    private Bitmap mBitmapShot;
-    private Bitmap mBitmapShotAnim1;
-    private Bitmap mBitmapShotAnim2;
-    private Bitmap mBitmapShotAnim3;
-    private Bitmap mVisibleBitmap;
-    private GameResources mGameRes;
-    private Random mRandom;
-    private Rect mCanvasRect;
+    protected int mDirection;
+    protected boolean mFalling;
+    protected boolean mShot;
+    protected long mGameTime;
+    protected long mShotTime;
+    protected long mQuackTime;
+    protected long mFlapTime;
 
-    private int mAnimationPhase;
-    private int mMovementDirection;
-    private boolean mShot;
-    private boolean mFalling;
+    public Duck(GameResources gameResources, SpriteSheet spriteSheet) {
+        super(gameResources,
+                new Animation(spriteSheet, ANIMATION_RATE, true,
+                        new Animation.FrameInfo("duck1_1_1", null, 0),
+                        new Animation.FrameInfo("duck1_1_2", null, 0),
+                        new Animation.FrameInfo("duck1_1_3", null, 0),
+                        new Animation.FrameInfo("duck1_1_2", null, 0)),
 
-    private long _lastAnimationTime;
-    private long _lastQuackTime;
-    private long _shotTime;
+                new Animation(spriteSheet, 1, false,
+                        new Animation.FrameInfo("duck1_shot", null, 0)),
 
-    public Duck(WeakReference<Context> ctr, GameResources gameRes) {
-        super(BitmapFactory.decodeResource(ctr.get().getResources(), R.drawable.duck_1));
-        Resources resources = ctr.get().getResources();
-        mBitmapFlyAnim1 = BitmapFactory.decodeResource(resources, R.drawable.duck_2);
-        mBitmapFlyAnim2 = BitmapFactory.decodeResource(resources, R.drawable.duck_3);
-        mBitmapShot = BitmapFactory.decodeResource(resources, R.drawable.duck_shot);
-        mBitmapShotAnim1 = BitmapFactory.decodeResource(resources, R.drawable.duck_shot1);
-        mBitmapShotAnim2 = BitmapFactory.decodeResource(resources, R.drawable.duck_shot2);
-        mBitmapShotAnim3 = BitmapFactory.decodeResource(resources, R.drawable.duck_shot3);
-        mGameRes = gameRes;
+                new Animation(spriteSheet, ANIMATION_RATE, true,
+                        new Animation.FrameInfo("duck1_fall", null, 0),
+                        new Animation.FrameInfo("duck1_3_1", new int[]{1, -1}, 0),
+                        new Animation.FrameInfo("duck1_fall", new int[]{-1, 1}, 0))
+        );
         mRandom = new Random();
-
-        DisplayMetrics dm = ctr.get().getResources().getDisplayMetrics();
-        mCanvasRect = new Rect(0, 0, dm.widthPixels, dm.heightPixels);
-
+        mDirection = Constants.DIRECTION_EAST;
+        mFalling = false;
+        mShot = false;
         reset();
-
-        MovementRate = 700;
-        mVisibleBitmap = mBitmap;
     }
 
+    @Override
+    public void reset() {
+        mShot = false;
+        mActiveAnimation = mAnimations[0];
+        mActiveAnimation.reset();
+        position(0, Math.abs(mRandom.nextInt(mCameraRect.bottom - mCameraRect.top) + mCameraRect.top - mCameraRect.height() / 4));
+    }
+
+    @Override
     public void update() {
-        long gameTime = mGameRes.getGameClock().getGameTime();
-
-        mFalling = mShot && gameTime >= _shotTime + DELAY_BEFORE_FALL;
-
-        if (mFalling && gameTime >= _shotTime + DELAY_BEFORE_FALL + RESET_TIME) {
-            reset();
-            MovementRate += 50;
-            return;
-        }
-
-        //TODO
-        if (!mCanvasRect.contains(mLeft, mTop) && !mShot) {
-            shoot();
-            MovementRate -= 50;
-        }
-
-        if (!mShot) {
-            if (gameTime >= _lastQuackTime + 1000 / QUACK_RATE) {
-                //quack
-                mGameRes.playSound(R.raw.quack);
-                _lastQuackTime = gameTime;
-            }
-        }
-
         int dx = 0;
         int dy = 0;
 
+        mGameTime = mGameRes.getGameClock().getGameTime();
+
         if (mShot) {
-            dy += mFalling ? mGameRes.getGameClock().getFrameTime() * DEFAULT_MOVEMENT_RATE / 1000 : 0;
+            if (mGameTime >= mShotTime + RESET_TIME) {
+                reset();
+                return;
+            } else if (mGameTime >= mShotTime + DELAY_BEFORE_FALL) {
+                mActiveAnimation = mAnimations[2];
+                dy += mGameRes.getGameClock().getFrameTime() * FALL_RATE / 1000;
+            }
         } else {
-            int step = (int) (mGameRes.getGameClock().getFrameTime() * MovementRate / 1000);
+            if (mGameTime >= mQuackTime + 1000 / QUACK_RATE) {
+                mGameRes.playSound(R.raw.quack);
+                mQuackTime = mGameTime;
+            }
+
+            if (mGameTime >= mFlapTime + 1000 / (ANIMATION_RATE / 3)) {
+                mGameRes.playSound(R.raw.flap);
+                mFlapTime = mGameTime;
+            }
+
+            int step = (int) (mGameRes.getGameClock().getFrameTime() * DEFAULT_MOVEMENT_RATE / 1000);
 
             if (isFlyingEast()) {
                 dx += step;
-            }
-
-            if (isFlyingWest()) {
+            } else if (isFlyingWest()) {
                 dx -= step;
             }
 
             if (isFlyingNorth()) {
                 dy -= step;
-            }
-
-            if (isFlyingSouth()) {
+            } else if (isFlyingSouth()) {
                 dy += step;
             }
         }
 
-        move(dx, dy);
-    }
-
-    @Override
-    public void update(int left, int top) {
-        super.update(left, top);
-        updateBitmap();
-    }
-
-    @Override
-    public void move(int dx, int dy) {
+        super.update();
         super.move(dx, dy);
-        updateBitmap();
     }
 
     @Override
-    public void draw(Canvas canvas) {
-        canvas.drawBitmap(mVisibleBitmap, mLeft, mTop, null);
+    public void onDraw(SpriteBatch batch) {
+        batch.add(getFrame(), mRect);
+    }
+
+    public boolean hit(int x, int y) {
+        return mRect.contains(x, y);
     }
 
     public void shoot() {
-        if (!mShot) {
-            mShot = true;
-            _shotTime = mGameRes.getGameClock().getGameTime();
-        }
-    }
-
-    public void reset() {
-        mShot = false;
-        mFalling = false;
-        mVisibleBitmap = mBitmap;
-        mAnimationPhase = 0;
-        mMovementDirection = Constants.DIRECTION_EAST;
-        _lastAnimationTime = 0;
-        _shotTime = 0;
-
-        int height = mCanvasRect.bottom;
-        int ran = Math.abs(mRandom.nextInt(height) - height / 5);
-
-        update(0, ran);
-    }
-
-    protected void updateBitmap() {
-        if (mGameRes.getGameClock().getGameTime() >= _lastAnimationTime + (1000 / ANIMATION_RATE)) {
-            _lastAnimationTime = mGameRes.getGameClock().getGameTime();
-            mAnimationPhase = (mAnimationPhase + 1) % 3;
-
-            if (mShot && !mFalling) {
-                mVisibleBitmap = mBitmapShot;
-            } else {
-                switch (mAnimationPhase) {
-                    case 0:
-                        mVisibleBitmap = mFalling ? mBitmapShotAnim1 : mBitmap;
-                        break;
-                    case 1:
-                        mVisibleBitmap = mFalling ? mBitmapShotAnim2 : mBitmapFlyAnim1;
-                        break;
-                    case 2:
-                        mVisibleBitmap = mFalling ? mBitmapShotAnim3 : mBitmapFlyAnim2;
-                        if (!mFalling)
-                            mGameRes.playSound(R.raw.flap);
-                        break;
-                }
-            }
-        }
-    }
-
-    @Override
-    public void dispose() {
-        super.dispose();
-        if (!mBitmapFlyAnim1.isRecycled()) mBitmapFlyAnim1.recycle();
-        if (!mBitmapFlyAnim2.isRecycled()) mBitmapFlyAnim2.recycle();
-        if (!mBitmapShot.isRecycled()) mBitmapShot.recycle();
-        if (!mBitmapShotAnim1.isRecycled()) mBitmapShotAnim1.recycle();
-        if (!mBitmapShotAnim2.isRecycled()) mBitmapShotAnim2.recycle();
-        if (!mBitmapShotAnim3.isRecycled()) mBitmapShotAnim3.recycle();
+        mActiveAnimation = mAnimations[1];
+        mShot = true;
+        mShotTime = mGameRes.getGameClock().getGameTime();
     }
 
     public boolean isFlyingNorth() {
-        return (mMovementDirection & Constants.DIRECTION_NORTH) == Constants.DIRECTION_NORTH;
+        return (mDirection & Constants.DIRECTION_NORTH) == Constants.DIRECTION_NORTH;
     }
 
     public boolean isFlyingSouth() {
-        return (mMovementDirection & Constants.DIRECTION_SOUTH) == Constants.DIRECTION_SOUTH;
+        return (mDirection & Constants.DIRECTION_SOUTH) == Constants.DIRECTION_SOUTH;
     }
 
     public boolean isFlyingEast() {
-        return (mMovementDirection & Constants.DIRECTION_EAST) == Constants.DIRECTION_EAST;
+        return (mDirection & Constants.DIRECTION_EAST) == Constants.DIRECTION_EAST;
     }
 
     public boolean isFlyingWest() {
-        return (mMovementDirection & Constants.DIRECTION_WEST) == Constants.DIRECTION_WEST;
+        return (mDirection & Constants.DIRECTION_WEST) == Constants.DIRECTION_WEST;
     }
 }

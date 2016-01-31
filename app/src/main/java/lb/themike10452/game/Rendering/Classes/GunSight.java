@@ -11,7 +11,7 @@ import lb.themike10452.game.R;
 /**
  * Created by DELL on 1/30/2016.
  */
-public class GunSight extends ImageBase {
+public class GunSight extends StaticImageBase {
     public GunSight(WeakReference<Context> ctr) {
         super(BitmapFactory.decodeResource(ctr.get().getResources(), R.drawable.gunsight));
         mBitmap = Bitmap.createScaledBitmap(mBitmap, 200, 200, false);
