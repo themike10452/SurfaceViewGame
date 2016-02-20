@@ -1,8 +1,5 @@
 package lb.themike10452.game.Rendering.Classes;
 
-import android.graphics.Rect;
-import android.util.Log;
-
 import java.util.Random;
 
 import lb.themike10452.game.R;
@@ -14,14 +11,26 @@ import lb.themike10452.game.Rendering.Constants;
 import lb.themike10452.game.Rendering.GameResources;
 
 /**
- * Created by DELL on 1/31/2016.
+ * Copyright 2016 Michael Mouawad
+ * <p/>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 public class Duck extends AnimatedImageBase implements IDrawable {
-    private static final int ANIMATION_RATE = 16;
+    private static final int ANIMATION_RATE = 15;
     private static final int QUACK_RATE = 1;
     private static final int DELAY_BEFORE_FALL = 500;
     private static final int RESET_TIME = 3000;
-    private static final int DEFAULT_MOVEMENT_RATE = 200;
+    private static final int DEFAULT_MOVEMENT_RATE = 600;
     private static final int FALL_RATE = 700;
 
     protected Random mRandom;
@@ -37,18 +46,18 @@ public class Duck extends AnimatedImageBase implements IDrawable {
     public Duck(GameResources gameResources, SpriteSheet spriteSheet) {
         super(gameResources,
                 new Animation(spriteSheet, ANIMATION_RATE, true,
-                        new Animation.FrameInfo("duck1_1_1", null, 0),
-                        new Animation.FrameInfo("duck1_1_2", null, 0),
-                        new Animation.FrameInfo("duck1_1_3", null, 0),
-                        new Animation.FrameInfo("duck1_1_2", null, 0)),
+                        new Animation.FrameInfo("duck111", null, 0),
+                        new Animation.FrameInfo("duck112", null, 0),
+                        new Animation.FrameInfo("duck113", null, 0),
+                        new Animation.FrameInfo("duck112", null, 0)),
 
                 new Animation(spriteSheet, 1, false,
-                        new Animation.FrameInfo("duck1_shot", null, 0)),
+                        new Animation.FrameInfo("duck1shot", null, 0)),
 
                 new Animation(spriteSheet, ANIMATION_RATE, true,
-                        new Animation.FrameInfo("duck1_fall", null, 0),
-                        new Animation.FrameInfo("duck1_3_1", new int[]{1, -1}, 0),
-                        new Animation.FrameInfo("duck1_fall", new int[]{-1, 1}, 0))
+                        new Animation.FrameInfo("duck1fall", null, 0),
+                        new Animation.FrameInfo("duck131", new int[]{1, -1}, 0),
+                        new Animation.FrameInfo("duck1fall", new int[]{-1, 1}, 0))
         );
         mRandom = new Random();
         mDirection = Constants.DIRECTION_EAST;
@@ -86,7 +95,7 @@ public class Duck extends AnimatedImageBase implements IDrawable {
                 mQuackTime = mGameTime;
             }
 
-            if (mGameTime >= mFlapTime + 1000 / (ANIMATION_RATE / 3)) {
+            if (mGameTime >= mFlapTime + 1000 / (ANIMATION_RATE / 3f)) {
                 mGameRes.playSound(R.raw.flap);
                 mFlapTime = mGameTime;
             }
